@@ -986,8 +986,14 @@ class simple_html_dom_node
  */
 class simple_html_dom
 {
-	public $root = null;
-	public $nodes = array();
+    /**
+     * @var simple_html_dom_node
+     */
+    public $root = null;
+    /**
+     * @var simple_html_dom_node[]
+     */
+    public $nodes = array();
 	public $callback = null;
 	public $lowercase = false;
 	// Used to keep track of how large the text was when we started.
