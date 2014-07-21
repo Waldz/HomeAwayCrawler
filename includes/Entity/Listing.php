@@ -63,14 +63,14 @@ class Listing
     /**
      * @var string
      *
-     * @ORM\Column(type="text", length=1000, nullable=false)
+     * @ORM\Column(type="text", length=1000, nullable=true)
      */
     private $description;
 
     /**
      * @var string
      *
-     * @ORM\Column(type="string", length=255, nullable=false)
+     * @ORM\Column(type="string", length=255, nullable=true)
      */
     private $owner;
 

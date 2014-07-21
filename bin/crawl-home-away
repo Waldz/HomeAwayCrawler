@@ -7,6 +7,9 @@ require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../library/simple_html_dom.php';
 require_once __DIR__ . '/../config/bootstrap.php';
 
+set_time_limit(0);
+ini_set('memory_limit', '500M');
+
 $orm = LoadServiceEntityManager();
 $crawler = new CrawlerListingSearch($orm);
 if(APP_ENVIRONMENT=='development') {
@@ -15,7 +18,8 @@ if(APP_ENVIRONMENT=='development') {
 }
 
 // Go thru all flats in da search
-$listingUrls = $crawler->requestSearch();
+$listingUrls = $crawler->requestSearchAll();
 foreach($listingUrls as $listing) {
     $listing = $crawler->requestDetailsByUrl($listing, $listing->getUrlDetail());
+    usleep(0.5*1000000);
 }

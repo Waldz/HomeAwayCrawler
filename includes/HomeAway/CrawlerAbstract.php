@@ -106,7 +106,7 @@ class CrawlerAbstract
     public function request($url, $method='GET')
     {
         $this->log(sprintf(
-            "HTTP request:\n\t%s..",
+            "HTTP request:\n\t%s",
             $url
         ));
 
@@ -164,6 +164,10 @@ class CrawlerAbstract
      */
     protected function log($message)
     {
-        echo $message . PHP_EOL;
+        echo sprintf(
+            '%s %s' . PHP_EOL,
+            date('Y-m-d H:i:s'),
+            $message
+        );
     }
 } 
