@@ -14,9 +14,12 @@ error_reporting(E_ALL);
 function LoadServiceEntityManager() {
     $config = Setup::createAnnotationMetadataConfiguration(
         array(
-            APP_PATH.'library/Entity'
+            APP_PATH.'includes/Entity'
         ),
-        APP_ENVIRONMENT=='development'
+        APP_ENVIRONMENT=='development',
+        APP_PATH . 'cache/doctrine/',
+        null,
+        false
     );
     return EntityManager::create(
         array(

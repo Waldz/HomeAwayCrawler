@@ -1,5 +1,7 @@
 <?php
 
+namespace FlatFindr\HomeAway;
+
 /**
  * Class CrawlerAbstract
  *
@@ -86,7 +88,7 @@ class CrawlerAbstract
     public function getCacheDirectory()
     {
         if(!isset($this->cacheDirectory)) {
-            $this->cacheDirectory = dirname(__FILE__) .'/cache/';
+            $this->cacheDirectory = __DIR__ . '/cache/';
         }
 
         return $this->cacheDirectory;
