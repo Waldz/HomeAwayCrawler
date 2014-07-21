@@ -8,8 +8,7 @@ require_once __DIR__ . '/../library/simple_html_dom.php';
 require_once __DIR__ . '/../config/bootstrap.php';
 
 $orm = LoadServiceEntityManager();
-
-$crawler = new CrawlerListingSearch();
+$crawler = new CrawlerListingSearch($orm);
 if(APP_ENVIRONMENT=='development') {
     $crawler->setCacheEnabled(true)
         ->setCacheDirectory(APP_PATH . '/data/cache/');
@@ -18,8 +17,5 @@ if(APP_ENVIRONMENT=='development') {
 // Go thru all flats in da search
 $listingUrls = $crawler->requestSearch();
 foreach($listingUrls as $listing) {
-    var_dump($listing);
-    $listing = $crawler->requestDetailsByUrl($listing->getUrlDetail(), $listing);
-    var_dump($listing);
+    $listing = $crawler->requestDetailsByUrl($listing, $listing->getUrlDetail());
 }
-

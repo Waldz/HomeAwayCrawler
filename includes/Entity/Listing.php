@@ -13,13 +13,15 @@ use Doctrine\ORM\Mapping as ORM;
  * @ORM\Entity()
  * @ORM\Table(
  *     name="listing",
- *     indexes={
- *         @ORM\Index(name="provider_ident", columns={"provider","provider_ident"})
+ *     uniqueConstraints={
+ *         @ORM\UniqueConstraint(name="provider_ident", columns={"provider","provider_ident"})
  *     }
  * )
  */
 class Listing
 {
+
+    const PROVIDER_HOMEAWAY = 'HomeAway';
 
     /**
      * @var int
