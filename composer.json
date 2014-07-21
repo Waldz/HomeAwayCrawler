@@ -1,0 +1,32 @@
+{
+    "name": "FlatFindr",
+    "description": "FlatFindr Application",
+    "license": "Private",
+    "keywords": [
+        "FlatFindr",
+        "Flat finder"
+    ],
+    "homepage": "http://trustribe.com/",
+    "authors": [
+        {
+            "name": "Valdas Petrulis",
+            "email": "petrulis.valdas@gmail.com",
+            "homepage": "http://rabbitize.net/"
+        }
+    ],
+
+    "require": {
+        "php": ">=5.4.1",
+
+        "doctrine/dbal": "2.4.*",
+        "doctrine/orm": "2.4.*",
+        "doctrine/annotations": "1.2.*",
+        "doctrine/migrations": "dev-master"
+    },
+
+    "autoload": {
+        "psr-4": {
+            "FlatFindr\\": "includes/"
+        }
+    }
+}
