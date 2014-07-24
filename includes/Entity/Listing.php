@@ -95,6 +95,13 @@ class Listing
     public $phoneList;
 
     /**
+     * @var string
+     *
+     * @ORM\Column(name="url_sphere", type="string", length=255, nullable=false)
+     */
+    private $urlSphere;
+
+    /**
      * Sets id.
      *
      * @param int $id
@@ -322,5 +329,25 @@ class Listing
         }
 
         return null;
+    }
+
+    /**
+     * Sets urlSphere.
+     *
+     * @param string $urlSphere
+     */
+    public function setUrlSphere($urlSphere)
+    {
+        $this->urlSphere = $urlSphere;
+    }
+
+    /**
+     * Retrieves urlSphere.
+     *
+     * @return string
+     */
+    public function getUrlSphere()
+    {
+        return $this->urlSphere;
     }
 }

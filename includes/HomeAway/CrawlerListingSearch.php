@@ -234,6 +234,8 @@ class CrawlerListingSearch
             $listing->setJsonData($matches[1]);
             $json = json_decode($matches[1], true);
 
+            $listing->setUrlSphere($json['property']['sphereUrl']);
+
             // Phones
             $this->parseJsonPhones($listing, $json);
 
@@ -281,6 +283,12 @@ class CrawlerListingSearch
      */
     protected function parseJsonPhones($listing, $json)
     {
+//        $json['contact']['contactId'];
+//        $json['contact']['contactId'];
+//        $json['contact']['languagesSpoken'];
+//        $json['contact']['otherLanguages'];
+//        $json['contact']['hasEmail'];
+
         $i = 1;
         foreach($json['contact']['phones'] as $jsonPhone) {
             $listingPhone = $listing->getPhone($jsonPhone['phoneNumber']);
