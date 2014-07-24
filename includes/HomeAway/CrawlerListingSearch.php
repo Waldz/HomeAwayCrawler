@@ -5,6 +5,7 @@ namespace FlatFindr\HomeAway;
 use Doctrine\ORM\EntityManager;
 use FlatFindr\Entity\Listing;
 use FlatFindr\Entity\ListingPhone;
+use FlatFindr\Entity\ListingPhoto;
 
 /**
  * Class CrawlerListingSearch
@@ -234,10 +235,13 @@ class CrawlerListingSearch
             $listing->setJsonData($matches[1]);
             $json = json_decode($matches[1], true);
 
+            // Other info
             $listing->setUrlSphere($json['property']['sphereUrl']);
-
             // Phones
             $this->parseJsonPhones($listing, $json);
+            // Photos
+            $this->parseJsonPhotos($listing, $json);
+
 
             //var_export( array_keys($json) );
             unset(
@@ -310,6 +314,34 @@ class CrawlerListingSearch
                 $listingPhone->setType(null);
             }
 
+            $i++;
+        }
+    }
+
+    /**
+     * @param Listing $listing
+     * @param array $json JSON structure about listing from HomeAway
+     */
+    protected function parseJsonPhotos($listing, $json)
+    {
+        $i = 1;
+        foreach($json['images'] as $jsonPhoto) {
+            $jsonImage = $jsonPhoto['imageFilesBySize']['1024x768'];
+
+            $listingPhoto = $listing->getPhoto($jsonImage['uri']);
+            if(!isset($listingPhoto)) {
+                $listingPhoto = new ListingPhoto();
+                $listing->addPhoto($listingPhoto);
+            }
+            $listingPhoto
+                ->setOrder($jsonPhoto['displayOrder'])
+                ->setType($jsonPhoto['type'])
+                ->setNotes($jsonPhoto['note'])
+                ->setUrl($jsonImage['uri'])
+                ->setUrlSecure($jsonImage['secureUri'])
+                ->setSize($jsonImage['imageSize'])
+                ->setWidth($jsonImage['width'])
+                ->setHeight($jsonImage['height']);
             $i++;
         }
     }

@@ -3,7 +3,6 @@
 namespace FlatFindr\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
-use FlatFindr\Entity\Listing;
 
 /**
  * @ORM\Entity

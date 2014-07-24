@@ -95,6 +95,19 @@ class Listing
     public $phoneList;
 
     /**
+     * All photos of this listing
+     *
+     * @var \Doctrine\Common\Collections\ArrayCollection
+     *
+     * @ORM\OneToMany(targetEntity="FlatFindr\Entity\ListingPhoto", mappedBy="listing", cascade={"all"})
+     * @ORM\JoinTable(
+     *   name="listing_photo",
+     *   joinColumns={@ORM\JoinColumn(name="listing_id", referencedColumnName="id", onDelete="CASCADE")}
+     * )
+     */
+    public $photoList;
+
+    /**
      * @var string
      *
      * @ORM\Column(name="url_sphere", type="string", length=255, nullable=false)
@@ -272,17 +285,6 @@ class Listing
     }
 
     /**
-     * Adds phone.
-     *
-     * @param ListingPhone $phone
-     */
-    public function addPhone($phone)
-    {
-        $phone->setListing($this);
-        $this->getPhoneList()->add($phone);
-    }
-
-    /**
      * Retrieves phoneList.
      *
      * @return \Doctrine\Common\Collections\ArrayCollection
@@ -309,6 +311,17 @@ class Listing
     }
 
     /**
+     * Adds phone.
+     *
+     * @param ListingPhone $phone
+     */
+    public function addPhone($phone)
+    {
+        $phone->setListing($this);
+        $this->getPhoneList()->add($phone);
+    }
+
+    /**
      * Retrieves main phone.
      *
      * @return ListingPhone
@@ -329,6 +342,53 @@ class Listing
         }
 
         return null;
+    }
+
+    /**
+     * Sets photoList.
+     *
+     * @param \Doctrine\Common\Collections\ArrayCollection $photoList
+     */
+    public function setPhotoList($photoList)
+    {
+        $this->photoList = $photoList;
+    }
+
+    /**
+     * Retrieves photoList.
+     *
+     * @return \Doctrine\Common\Collections\ArrayCollection
+     */
+    public function getPhotoList()
+    {
+        return $this->photoList;
+    }
+
+    /**
+     * @param $url
+     * @return ListingPhoto
+     */
+    public function getPhoto($url)
+    {
+        foreach($this->getPhotoList() as $photo) {
+            /** @var ListingPhoto $photo */
+            if($photo->getUrl()==$url) {
+                return $photo;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Adds photo.
+     *
+     * @param ListingPhoto $photo
+     */
+    public function addPhoto($photo)
+    {
+        $photo->setListing($this);
+        $this->getPhotoList()->add($photo);
     }
 
     /**
