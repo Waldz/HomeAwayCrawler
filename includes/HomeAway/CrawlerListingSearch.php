@@ -4,6 +4,7 @@ namespace FlatFindr\HomeAway;
 
 use Doctrine\ORM\EntityManager;
 use FlatFindr\Entity\Listing;
+use FlatFindr\Entity\ListingLocation;
 use FlatFindr\Entity\ListingPhone;
 use FlatFindr\Entity\ListingPhoto;
 
@@ -235,13 +236,21 @@ class CrawlerListingSearch
             $listing->setJsonData($matches[1]);
             $json = json_decode($matches[1], true);
 
-            // Other info
-            $listing->setUrlSphere($json['property']['sphereUrl']);
             // Phones
             $this->parseJsonPhones($listing, $json);
+            // Locations
+            $this->parseJsonLocation($listing, $json);
             // Photos
             $this->parseJsonPhotos($listing, $json);
 
+            // Other info
+            $listing->setUrlSphere($json['property']['sphereUrl']);
+            if(!empty($json['property']['videoUrls'])) {
+                $this->log(sprintf(
+                    '[NOTICE] Found %d videos',
+                    count($json['property']['videoUrls'])
+                ));
+            }
 
             //var_export( array_keys($json) );
             unset(
@@ -253,9 +262,9 @@ class CrawlerListingSearch
                 $json['contact']['primaryPhone'],
                 $json['availabilityCalendar']
             );
-            var_export($json);
+            //var_export($json);
         } else {
-            // TODO Log warning to file
+            throw new \UnexpectedValueException('JSON details not found');
         }
 
         // Update DB
@@ -342,6 +351,46 @@ class CrawlerListingSearch
                 ->setSize($jsonImage['imageSize'])
                 ->setWidth($jsonImage['width'])
                 ->setHeight($jsonImage['height']);
+            $i++;
+        }
+    }
+
+    /**
+     * @param Listing $listing
+     * @param array $json JSON structure about listing from HomeAway
+     *
+     * @throws \UnexpectedValueException
+     */
+    protected function parseJsonLocation($listing, $json)
+    {
+        if(empty($json['property']['googleLocationJson'])) {
+            throw new \UnexpectedValueException('Location JSON not found');
+        }
+
+        $jsonLocations = json_decode($json['property']['googleLocationJson'], true);
+        $i = 1;
+        foreach($jsonLocations['location'] as $jsonLocation) {
+            $latitude = urldecode($jsonLocation['a']);
+            $longitude = urldecode($jsonLocation['b']);
+
+            $listingLocation = $listing->getLocation($latitude, $longitude);
+            if(!isset($listingLocation)) {
+                $listingLocation = new ListingLocation();
+                $listing->addLocation($listingLocation);
+            }
+            $listingLocation
+                ->setLatitude($latitude)
+                ->setLongitude($longitude)
+                ->setZoom($jsonLocation['zoom'])
+                ->setZoomMax($jsonLocation['maxZoom'])
+                ->setExact($jsonLocation['exact'])
+                ->setIsValid($jsonLocation['addressLatLngIsValid']);
+
+            if($jsonLocation['type']!='null') {
+                $listingLocation->setType($jsonLocation['type']);
+            } else {
+                $listingLocation->setType(null);
+            }
             $i++;
         }
     }

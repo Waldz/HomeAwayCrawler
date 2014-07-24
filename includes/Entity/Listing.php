@@ -108,6 +108,19 @@ class Listing
     public $photoList;
 
     /**
+     * All locations of this listing
+     *
+     * @var \Doctrine\Common\Collections\ArrayCollection
+     *
+     * @ORM\OneToMany(targetEntity="FlatFindr\Entity\ListingLocation", mappedBy="listing", cascade={"all"})
+     * @ORM\JoinTable(
+     *   name="listing_location",
+     *   joinColumns={@ORM\JoinColumn(name="listing_id", referencedColumnName="id", onDelete="CASCADE")}
+     * )
+     */
+    public $locationList;
+
+    /**
      * @var string
      *
      * @ORM\Column(name="url_sphere", type="string", length=255, nullable=false)
@@ -389,6 +402,55 @@ class Listing
     {
         $photo->setListing($this);
         $this->getPhotoList()->add($photo);
+    }
+
+    /**
+     * Sets locationList.
+     *
+     * @param \Doctrine\Common\Collections\ArrayCollection $locationList
+     */
+    public function setLocationList($locationList)
+    {
+        $this->locationList = $locationList;
+    }
+
+    /**
+     * Retrieves locationList.
+     *
+     * @return \Doctrine\Common\Collections\ArrayCollection
+     */
+    public function getLocationList()
+    {
+        return $this->locationList;
+    }
+
+    /**
+     * @param double $latitude
+     * @param double $longitude
+     *
+     * @return ListingLocation
+     */
+    public function getLocation($latitude, $longitude)
+    {
+        foreach($this->getLocationList() as $location) {
+            /** @var ListingLocation $location */
+            if($location->getLatitude()==$latitude && $location->getLongitude()==$longitude) {
+                return $location;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Adds location.
+     *
+     * @param ListingLocation $location
+     */
+    public function addLocation($location)
+    {
+        $location->setListing($this);
+        $this->getLocationList()->add($location);
     }
 
     /**
