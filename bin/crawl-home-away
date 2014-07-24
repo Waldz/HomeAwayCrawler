@@ -17,8 +17,10 @@ if(APP_ENVIRONMENT=='development') {
         ->setCacheDirectory(APP_PATH . '/data/cache/');
 }
 
-// Go thru all flats in da search
+// Go thru all apartments in da search
 $listingUrls = $crawler->requestSearchAll();
+
+// Request detailed info about each apartment
 foreach($listingUrls as $listing) {
     $listing = $crawler->requestDetailsByUrl($listing, $listing->getUrlDetail());
     usleep(0.5*1000000);

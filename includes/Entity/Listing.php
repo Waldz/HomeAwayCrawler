@@ -75,6 +75,26 @@ class Listing
     private $owner;
 
     /**
+     * @var string
+     *
+     * @ORM\Column(type="text", length=1000, nullable=true)
+     */
+    private $jsonData;
+
+    /**
+     * All phones of this listing
+     *
+     * @var \Doctrine\Common\Collections\ArrayCollection
+     *
+     * @ORM\OneToMany(targetEntity="FlatFindr\Entity\ListingPhone", mappedBy="listing", cascade={"all"})
+     * @ORM\JoinTable(
+     *   name="listing_phone",
+     *   joinColumns={@ORM\JoinColumn(name="listing_id", referencedColumnName="id", onDelete="CASCADE")}
+     * )
+     */
+    public $phoneList;
+
+    /**
      * Sets id.
      *
      * @param int $id
@@ -212,5 +232,95 @@ class Listing
     public function getOwner()
     {
         return $this->owner;
+    }
+
+    /**
+     * Sets jsonData.
+     *
+     * @param string $jsonData
+     */
+    public function setJsonData($jsonData)
+    {
+        $this->jsonData = $jsonData;
+    }
+
+    /**
+     * Retrieves jsonData.
+     *
+     * @return string
+     */
+    public function getJsonData()
+    {
+        return $this->jsonData;
+    }
+
+    /**
+     * Sets phoneList.
+     *
+     * @param \Doctrine\Common\Collections\ArrayCollection $phoneList
+     */
+    public function setPhoneList($phoneList)
+    {
+        $this->phoneList = $phoneList;
+    }
+
+    /**
+     * Adds phone.
+     *
+     * @param ListingPhone $phone
+     */
+    public function addPhone($phone)
+    {
+        $phone->setListing($this);
+        $this->getPhoneList()->add($phone);
+    }
+
+    /**
+     * Retrieves phoneList.
+     *
+     * @return \Doctrine\Common\Collections\ArrayCollection
+     */
+    public function getPhoneList()
+    {
+        return $this->phoneList;
+    }
+
+    /**
+     * @param $phoneNumber
+     * @return ListingPhone
+     */
+    public function getPhone($phoneNumber)
+    {
+        foreach($this->getPhoneList() as $phone) {
+            /** @var ListingPhone $phone */
+            if($phone->getPhone()==$phoneNumber) {
+                return $phone;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Retrieves main phone.
+     *
+     * @return ListingPhone
+     */
+    public function getPhonePrimary()
+    {
+        $list = $this->getPhoneList();
+
+        foreach($list as $phone) {
+            /** @var ListingPhone $phone */
+            if($phone->getType()==ListingPhone::TYPE_PRIMARY) {
+                return $phone;
+            }
+        }
+
+        if($list->count()>0) {
+            return $list->get(0);
+        }
+
+        return null;
     }
 }
