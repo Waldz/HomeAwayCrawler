@@ -7,6 +7,7 @@ use FlatFindr\Entity\Listing;
 use FlatFindr\Entity\ListingLocation;
 use FlatFindr\Entity\ListingPhone;
 use FlatFindr\Entity\ListingPhoto;
+use FlatFindr\Entity\ListingPrice;
 
 /**
  * Class CrawlerListingSearch
@@ -230,6 +231,9 @@ class CrawlerListingSearch
             );
         }
 
+        // Prices
+        $this->parseJsonPrices($listing, $dom);
+
         // JSON structure
         preg_match('/var unitJSON = ({.*});/', $html, $matches) && !empty($matches[1]);
         if(count($matches)>0 && !empty($matches[1])) {
@@ -239,7 +243,7 @@ class CrawlerListingSearch
             // Phones
             $this->parseJsonPhones($listing, $json);
             // Locations
-            $this->parseJsonLocation($listing, $json);
+            $this->parseJsonLocations($listing, $json);
             // Photos
             $this->parseJsonPhotos($listing, $json);
 
@@ -361,7 +365,7 @@ class CrawlerListingSearch
      *
      * @throws \UnexpectedValueException
      */
-    protected function parseJsonLocation($listing, $json)
+    protected function parseJsonLocations($listing, $json)
     {
         if(empty($json['property']['googleLocationJson'])) {
             throw new \UnexpectedValueException('Location JSON not found');
@@ -393,5 +397,55 @@ class CrawlerListingSearch
             }
             $i++;
         }
+    }
+
+    /**
+     * @param Listing $listing
+     * @param \simple_html_dom $dom
+     *
+     * @throws \UnexpectedValueException
+     */
+    protected function parseJsonPrices($listing, $dom)
+    {
+        /** @var \simple_html_dom_node $domTable */
+        $domTable = $dom->find('table.ratesTable', 0);
+        if(!$domTable) {
+            throw new \UnexpectedValueException('Price details not found');
+        }
+
+        $i = 1;
+        foreach($domTable->find('tr.ratePeriodLabel') as $domRow) {
+            /** @var \simple_html_dom_node $domRow */
+            /** @var \simple_html_dom_node $domDate */
+            $domDate = $domRow->find('td.alt .ratePeriodDates ', 0);
+            if(preg_match('/(.* \d* \d*) - (.* \d* \d*)/', trim($domDate->text()), $matches)) {
+                $dateStart = new \DateTime($matches[1]);
+                $dateEnd = new \DateTime($matches[2]);
+            } else {
+                throw new \UnexpectedValueException('Price date not found');
+            }
+
+            $price = trim($domRow->find('td.weekly .rate', 0)->text());
+            $price = str_replace(array('$', ','), '', $price);
+            $priceNotes = trim($domRow->find('td.weekly .ratenote', 0)->text());
+
+            if(!empty($price)) {
+                $listingPrice = $listing->getPrice(ListingPrice::TYPE_DAILY_WEEKLY, $dateStart, $dateEnd);
+                if(!isset($listingPrice)) {
+                    $listingPrice = new ListingPrice();
+                    $listing->addPrice($listingPrice);
+                }
+                $listingPrice
+                    ->setType(ListingPrice::TYPE_DAILY_WEEKLY)
+                    ->setDateStart($dateStart)
+                    ->setDateEnd($dateEnd)
+                    ->setPrice($price)
+                    ->setCurrency('USD')
+                    ->setNotes($priceNotes);
+            }
+
+            $i++;
+        }
+
     }
 }

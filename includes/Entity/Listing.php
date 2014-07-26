@@ -121,6 +121,19 @@ class Listing
     public $locationList;
 
     /**
+     * All prices of this listing
+     *
+     * @var \Doctrine\Common\Collections\ArrayCollection
+     *
+     * @ORM\OneToMany(targetEntity="FlatFindr\Entity\ListingPrice", mappedBy="listing", cascade={"all"})
+     * @ORM\JoinTable(
+     *   name="listing_price",
+     *   joinColumns={@ORM\JoinColumn(name="listing_id", referencedColumnName="id", onDelete="CASCADE")}
+     * )
+     */
+    public $priceList;
+
+    /**
      * @var string
      *
      * @ORM\Column(name="url_sphere", type="string", length=255, nullable=false)
@@ -434,7 +447,10 @@ class Listing
     {
         foreach($this->getLocationList() as $location) {
             /** @var ListingLocation $location */
-            if($location->getLatitude()==$latitude && $location->getLongitude()==$longitude) {
+            if(
+                $location->getLatitude()==$latitude
+                && $location->getLongitude()==$longitude
+            ) {
                 return $location;
             }
         }
@@ -451,6 +467,60 @@ class Listing
     {
         $location->setListing($this);
         $this->getLocationList()->add($location);
+    }
+
+    /**
+     * Sets priceList.
+     *
+     * @param \Doctrine\Common\Collections\ArrayCollection $priceList
+     */
+    public function setPriceList($priceList)
+    {
+        $this->priceList = $priceList;
+    }
+
+    /**
+     * Retrieves priceList.
+     *
+     * @return \Doctrine\Common\Collections\ArrayCollection
+     */
+    public function getPriceList()
+    {
+        return $this->priceList;
+    }
+
+    /**
+     * @param string $type
+     * @param \DateTime $dateStart
+     * @param \DateTime $dateEnd
+     *
+     * @return ListingPrice
+     */
+    public function getPrice($type, \DateTime $dateStart, \DateTime $dateEnd)
+    {
+        foreach($this->getPriceList() as $listingPrice) {
+            /** @var ListingPrice $listingPrice */
+            if(
+                $listingPrice->getType()==$type
+                && $listingPrice->getDateStart()->format('Y-m-d')==$dateStart->format('Y-m-d')
+                && $listingPrice->getDateEnd()->format('Y-m-d')==$dateEnd->format('Y-m-d')
+            ) {
+                return $listingPrice;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Adds price.
+     *
+     * @param ListingPrice $price
+     */
+    public function addPrice($price)
+    {
+        $price->setListing($this);
+        $this->getPriceList()->add($price);
     }
 
     /**
