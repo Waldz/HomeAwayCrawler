@@ -238,43 +238,30 @@ class CrawlerListingSearch
             $jsonAnalytics = null;
         }
 
-        // Prices
-        $this->parseJsonPrices($listing, $dom, $jsonAnalytics);
-
         // JSON structure
         if( preg_match('/var unitJSON = ({.+});/', $html, $matches) ) {
             $listing->setJsonData($matches[1]);
             $json = json_decode($matches[1], true);
-
-            // Phones
-            $this->parseJsonPhones($listing, $json);
-            // Locations
-            $this->parseJsonLocations($listing, $json);
-            // Photos
-            $this->parseJsonPhotos($listing, $json);
-
-            // Other info
-            $listing->setUrlSphere($json['property']['sphereUrl']);
-            if(!empty($json['property']['videoUrls'])) {
-                $this->log(sprintf(
-                    '[NOTICE] Found %d videos',
-                    count($json['property']['videoUrls'])
-                ));
-            }
-
-            //var_export( array_keys($json) );
-            unset(
-                $json['images'],
-                $json['property']['imageUrls'],
-                $json['property']['contact'],
-                $json['contact']['phones'],
-                $json['contact']['phonesByTitle'],
-                $json['contact']['primaryPhone'],
-                $json['availabilityCalendar']
-            );
-            //var_export($json);
         } else {
             throw new \UnexpectedValueException('JSON details not found');
+        }
+
+        // Prices
+        $this->parseJsonPrices($listing, $dom, $jsonAnalytics);
+        // Phones
+        $this->parseJsonPhones($listing, $json);
+        // Locations
+        $this->parseJsonLocations($listing, $json);
+        // Photos
+        $this->parseJsonPhotos($listing, $json);
+
+        // Other info
+        $listing->setUrlSphere($json['property']['sphereUrl']);
+        if(!empty($json['property']['videoUrls'])) {
+            $this->log(sprintf(
+                '[NOTICE] Found %d videos',
+                count($json['property']['videoUrls'])
+            ));
         }
 
         // Update DB
