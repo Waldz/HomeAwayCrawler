@@ -231,12 +231,18 @@ class CrawlerListingSearch
             );
         }
 
+        // JSON analytics structure
+        if( preg_match('/var analyticsdatalayer = ({.+});/', $html, $matches) ) {
+            $jsonAnalytics = json_decode($matches[1], true);
+        } else {
+            $jsonAnalytics = null;
+        }
+
         // Prices
-        $this->parseJsonPrices($listing, $dom);
+        $this->parseJsonPrices($listing, $dom, $jsonAnalytics);
 
         // JSON structure
-        preg_match('/var unitJSON = ({.*});/', $html, $matches) && !empty($matches[1]);
-        if(count($matches)>0 && !empty($matches[1])) {
+        if( preg_match('/var unitJSON = ({.+});/', $html, $matches) ) {
             $listing->setJsonData($matches[1]);
             $json = json_decode($matches[1], true);
 
@@ -402,15 +408,27 @@ class CrawlerListingSearch
     /**
      * @param Listing $listing
      * @param \simple_html_dom $dom
+     * @param array $jsonAnalytics
      *
      * @throws \UnexpectedValueException
      */
-    protected function parseJsonPrices(Listing $listing, $dom)
+    protected function parseJsonPrices(Listing $listing, $dom, $jsonAnalytics)
     {
         /** @var \simple_html_dom_node $domTable */
         $domTable = $dom->find('table.ratesTable', 0);
         if(!$domTable) {
             throw new \UnexpectedValueException('Price details not found');
+        }
+
+        $basis = trim($dom->find('#rentalRates .basis dd', 0)->text());
+        if($basis!='Per property') {
+            throw new \UnexpectedValueException('Price basis unknown');
+        }
+
+        //$currency = trim($dom->find('#rentalRates .units dd', 0)->text());
+        $currency = strtoupper($jsonAnalytics['currency']);
+        if(empty($currency)) {
+            throw new \UnexpectedValueException('Price currency not found');
         }
 
         $i = 1;
@@ -426,27 +444,27 @@ class CrawlerListingSearch
             }
 
             $this->parsePriceByType(
-                $listing, ListingPrice::TYPE_DAILY, $dateStart, $dateEnd,
+                $listing, ListingPrice::TYPE_DAILY, $dateStart, $dateEnd, $currency,
                 $domRow->find('td.nightly .rate', 0),
                 $domRow->find('td.nightly .ratenote', 0)
             );
             $this->parsePriceByType(
-                $listing, ListingPrice::TYPE_WEEKEND, $dateStart, $dateEnd,
+                $listing, ListingPrice::TYPE_WEEKEND, $dateStart, $dateEnd, $currency,
                 $domRow->find('td.weekendNight .rate', 0),
                 $domRow->find('td.weekendNight .ratenote', 0)
             );
             $this->parsePriceByType(
-                $listing, ListingPrice::TYPE_WEEKLY, $dateStart, $dateEnd,
+                $listing, ListingPrice::TYPE_WEEKLY, $dateStart, $dateEnd, $currency,
                 $domRow->find('td.weekly .rate', 0),
                 $domRow->find('td.weekly .ratenote', 0)
             );
             $this->parsePriceByType(
-                $listing, ListingPrice::TYPE_MONTHLY, $dateStart, $dateEnd,
+                $listing, ListingPrice::TYPE_MONTHLY, $dateStart, $dateEnd, $currency,
                 $domRow->find('td.monthly .rate', 0),
                 $domRow->find('td.monthly .ratenote', 0)
             );
             $this->parsePriceByType(
-                $listing, ListingPrice::TYPE_EVENT, $dateStart, $dateEnd,
+                $listing, ListingPrice::TYPE_EVENT, $dateStart, $dateEnd, $currency,
                 $domRow->find('td.event .rate', 0),
                 $domRow->find('td.event .ratenote', 0)
             );
@@ -461,11 +479,14 @@ class CrawlerListingSearch
      * @param $type
      * @param \DateTime $dateStart
      * @param \DateTime $dateEnd
+     * @param string $currency
      * @param \simple_html_dom_node|array $price
      * @param \simple_html_dom_node|array $priceNotes
      */
     protected function parsePriceByType(
-        Listing $listing, $type, \DateTime $dateStart, \DateTime $dateEnd, $price, $priceNotes
+        Listing $listing,
+        $type, \DateTime $dateStart, \DateTime $dateEnd, $currency,
+        $price, $priceNotes
     )
     {
         if(!isset($price)) {
@@ -489,7 +510,7 @@ class CrawlerListingSearch
             ->setDateStart($dateStart)
             ->setDateEnd($dateEnd)
             ->setPrice($price)
-            ->setCurrency('USD')
+            ->setCurrency($currency)
             ->setNotes($priceNotes);
     }
 }
