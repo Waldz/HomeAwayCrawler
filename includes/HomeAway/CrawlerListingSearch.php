@@ -199,7 +199,7 @@ class CrawlerListingSearch
      * @return Listing
      * @throws \UnexpectedValueException
      */
-    public function requestDetailsByUrl($listing, $url)
+    public function requestDetailsByUrl(Listing $listing, $url)
     {
         $orm = $this->getEntityManager();
 
@@ -286,7 +286,7 @@ class CrawlerListingSearch
      * @return Listing
      * @throws \UnexpectedValueException
      */
-    public function requestDetails($listing)
+    public function requestDetails(Listing $listing)
     {
         return $this->requestDetailsByUrl(
             $listing,
@@ -298,7 +298,7 @@ class CrawlerListingSearch
      * @param Listing $listing
      * @param array $json JSON structure about listing from HomeAway
      */
-    protected function parseJsonPhones($listing, $json)
+    protected function parseJsonPhones(Listing $listing, $json)
     {
 //        $json['contact']['contactId'];
 //        $json['contact']['contactId'];
@@ -335,7 +335,7 @@ class CrawlerListingSearch
      * @param Listing $listing
      * @param array $json JSON structure about listing from HomeAway
      */
-    protected function parseJsonPhotos($listing, $json)
+    protected function parseJsonPhotos(Listing $listing, $json)
     {
         $i = 1;
         foreach($json['images'] as $jsonPhoto) {
@@ -365,7 +365,7 @@ class CrawlerListingSearch
      *
      * @throws \UnexpectedValueException
      */
-    protected function parseJsonLocations($listing, $json)
+    protected function parseJsonLocations(Listing $listing, $json)
     {
         if(empty($json['property']['googleLocationJson'])) {
             throw new \UnexpectedValueException('Location JSON not found');
@@ -405,7 +405,7 @@ class CrawlerListingSearch
      *
      * @throws \UnexpectedValueException
      */
-    protected function parseJsonPrices($listing, $dom)
+    protected function parseJsonPrices(Listing $listing, $dom)
     {
         /** @var \simple_html_dom_node $domTable */
         $domTable = $dom->find('table.ratesTable', 0);
@@ -425,27 +425,71 @@ class CrawlerListingSearch
                 throw new \UnexpectedValueException('Price date not found');
             }
 
-            $price = trim($domRow->find('td.weekly .rate', 0)->text());
-            $price = str_replace(array('$', ','), '', $price);
-            $priceNotes = trim($domRow->find('td.weekly .ratenote', 0)->text());
-
-            if(!empty($price)) {
-                $listingPrice = $listing->getPrice(ListingPrice::TYPE_DAILY_WEEKLY, $dateStart, $dateEnd);
-                if(!isset($listingPrice)) {
-                    $listingPrice = new ListingPrice();
-                    $listing->addPrice($listingPrice);
-                }
-                $listingPrice
-                    ->setType(ListingPrice::TYPE_DAILY_WEEKLY)
-                    ->setDateStart($dateStart)
-                    ->setDateEnd($dateEnd)
-                    ->setPrice($price)
-                    ->setCurrency('USD')
-                    ->setNotes($priceNotes);
-            }
+            $this->parsePriceByType(
+                $listing, ListingPrice::TYPE_DAILY, $dateStart, $dateEnd,
+                $domRow->find('td.nightly .rate', 0),
+                $domRow->find('td.nightly .ratenote', 0)
+            );
+            $this->parsePriceByType(
+                $listing, ListingPrice::TYPE_WEEKEND, $dateStart, $dateEnd,
+                $domRow->find('td.weekendNight .rate', 0),
+                $domRow->find('td.weekendNight .ratenote', 0)
+            );
+            $this->parsePriceByType(
+                $listing, ListingPrice::TYPE_WEEKLY, $dateStart, $dateEnd,
+                $domRow->find('td.weekly .rate', 0),
+                $domRow->find('td.weekly .ratenote', 0)
+            );
+            $this->parsePriceByType(
+                $listing, ListingPrice::TYPE_MONTHLY, $dateStart, $dateEnd,
+                $domRow->find('td.monthly .rate', 0),
+                $domRow->find('td.monthly .ratenote', 0)
+            );
+            $this->parsePriceByType(
+                $listing, ListingPrice::TYPE_EVENT, $dateStart, $dateEnd,
+                $domRow->find('td.event .rate', 0),
+                $domRow->find('td.event .ratenote', 0)
+            );
 
             $i++;
         }
 
+    }
+
+    /**
+     * @param Listing $listing
+     * @param $type
+     * @param \DateTime $dateStart
+     * @param \DateTime $dateEnd
+     * @param \simple_html_dom_node|array $price
+     * @param \simple_html_dom_node|array $priceNotes
+     */
+    protected function parsePriceByType(
+        Listing $listing, $type, \DateTime $dateStart, \DateTime $dateEnd, $price, $priceNotes
+    )
+    {
+        if(!isset($price)) {
+            return;
+        }
+
+        $price = trim($price->text());
+        $price = str_replace(array('$', ','), '', $price);
+        if(empty($price)) {
+            return;
+        }
+        $priceNotes = trim($priceNotes->text());
+
+        $listingPrice = $listing->getPrice($type, $dateStart, $dateEnd);
+        if(!isset($listingPrice)) {
+            $listingPrice = new ListingPrice();
+            $listing->addPrice($listingPrice);
+        }
+        $listingPrice
+            ->setType($type)
+            ->setDateStart($dateStart)
+            ->setDateEnd($dateEnd)
+            ->setPrice($price)
+            ->setCurrency('USD')
+            ->setNotes($priceNotes);
     }
 }

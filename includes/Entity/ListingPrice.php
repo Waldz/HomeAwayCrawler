@@ -17,10 +17,10 @@ class ListingPrice
 {
 
     const TYPE_DAILY = 'daily';
-    const TYPE_DAILY_WEEKEND = 'daily_weekend';
-    const TYPE_DAILY_WEEKLY = 'weekly';
-    const TYPE_DAILY_MONTHLY = 'monthly';
-    const TYPE_DAILY_EVENT = 'event';
+    const TYPE_WEEKEND = 'daily_weekend';
+    const TYPE_WEEKLY = 'weekly';
+    const TYPE_MONTHLY = 'monthly';
+    const TYPE_EVENT = 'event';
 
     /**
      * @var int
