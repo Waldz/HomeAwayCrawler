@@ -4,6 +4,7 @@ namespace FlatFindr\HomeAway;
 
 use Doctrine\ORM\EntityManager;
 use FlatFindr\Entity\Listing;
+use FlatFindr\Entity\ListingAmenity;
 use FlatFindr\Entity\ListingLocation;
 use FlatFindr\Entity\ListingPhone;
 use FlatFindr\Entity\ListingPhoto;
@@ -247,7 +248,9 @@ class CrawlerListingSearch
         }
 
         // Prices
-        $this->parseJsonPrices($listing, $dom, $jsonAnalytics);
+        $this->parsePrices($listing, $dom, $jsonAnalytics);
+        // Amenities
+        $this->parseAmenities($listing, $dom);
         // Phones
         $this->parseJsonPhones($listing, $json);
         // Locations
@@ -399,7 +402,7 @@ class CrawlerListingSearch
      *
      * @throws \UnexpectedValueException
      */
-    protected function parseJsonPrices(Listing $listing, $dom, $jsonAnalytics)
+    protected function parsePrices(Listing $listing, $dom, $jsonAnalytics)
     {
         /** @var \simple_html_dom_node $domTable */
         $domTable = $dom->find('table.ratesTable', 0);
@@ -458,7 +461,6 @@ class CrawlerListingSearch
 
             $i++;
         }
-
     }
 
     /**
@@ -499,5 +501,122 @@ class CrawlerListingSearch
             ->setPrice($price)
             ->setCurrency($currency)
             ->setNotes($priceNotes);
+    }
+
+    /**
+     * @param Listing $listing
+     * @param \simple_html_dom $dom
+     *
+     * @throws \UnexpectedValueException
+     */
+    protected function parseAmenities(Listing $listing, $dom)
+    {
+        /** @var \simple_html_dom_node $domTable */
+        $domTable = $dom->find('#amenities-container', 0);
+        if(!$domTable) {
+            throw new \UnexpectedValueException('Amenities details not found');
+        }
+
+        $i = 1;
+        foreach($domTable->find('.row-fluid') as $domRow) {
+            /** @var \simple_html_dom_node $domRow */
+            /** @var \simple_html_dom_node $domName */
+            $domName = $domRow->find('div', 0);
+            if($domName->hasAttribute('id')) {
+                switch($domName->getAttribute('id')) {
+                    case 'propertyType':
+                        $this->parseAmenityByType($listing, ListingAmenity::NAME_PROPERTY_TYPE, $domRow);
+                        break;
+
+                    case 'locationType':
+                        $this->parseAmenityByType($listing, ListingAmenity::NAME_LOCATION_TYPE, $domRow);
+                        break;
+
+                    case 'general':
+                        $this->parseAmenityByType($listing, ListingAmenity::NAME_GENERAL, $domRow);
+                        break;
+
+                    case 'kitchen':
+                        $this->parseAmenityByType($listing, ListingAmenity::NAME_KITCHEN, $domRow);
+                        break;
+
+                    case 'entertainment':
+                        $this->parseAmenityByType($listing, ListingAmenity::NAME_ENTERTAINMENT, $domRow);
+                        break;
+
+                    case 'outside':
+                        $this->parseAmenityByType($listing, ListingAmenity::NAME_OUTSIDE, $domRow);
+                        break;
+
+                    case 'suitability':
+                        $this->parseAmenityByType($listing, ListingAmenity::NAME_SUITABILITY, $domRow);
+                        break;
+
+                    case 'poolSpa':
+                        $this->parseAmenityByType($listing, ListingAmenity::NAME_POOL, $domRow);
+                        break;
+
+                    case 'attractions':
+                        $this->parseAmenityByType($listing, ListingAmenity::NAME_ATTRACTIONS, $domRow);
+                        break;
+
+                    case 'leisureActivities':
+                        $this->parseAmenityByType($listing, ListingAmenity::NAME_LEISURE, $domRow);
+                        break;
+
+                    case 'localservicesandbusinesses':
+                        $this->parseAmenityByType($listing, ListingAmenity::NAME_SERVICES, $domRow);
+                        break;
+
+                    case 'sportsandadventureactivities':
+                        $this->parseAmenityByType($listing, ListingAmenity::NAME_SPORTS, $domRow);
+                        break;
+
+                    default:
+                        throw new \UnexpectedValueException(sprintf(
+                            'Amenity id not recognized: %s',
+                            $domName->getAttribute('id')
+                        ));
+                        break;
+                }
+            } else {
+                switch($domName->text()) {
+                    case 'Bedrooms:':
+                        $this->parseAmenityByType($listing, ListingAmenity::NAME_BEDROOM, $domRow);
+                        break;
+
+                    case 'Bathrooms:':
+                        $this->parseAmenityByType($listing, ListingAmenity::NAME_BATHROOM, $domRow);
+                        break;
+
+                    default:
+                        throw new \UnexpectedValueException(sprintf(
+                            'Amenity name not recognized: %s',
+                            $domName->text()
+                        ));
+                        break;
+                }
+            }
+
+            $i++;
+        }
+    }
+
+    /**
+     * @param Listing $listing
+     * @param string $name
+     * @param \simple_html_dom_node $domRow
+     */
+    protected function parseAmenityByType(Listing $listing, $name, $domRow)
+    {
+        foreach($domRow->find('div ul li') as $domValue) {
+            /** @var \simple_html_dom_node $domValue */
+            $value = trim($domValue->text());
+            if(!empty($value)) {
+                $amenity = new ListingAmenity();
+                $amenity->setName($name)->setValue($value);
+                $listing->addAmenity($amenity);
+            }
+        }
     }
 }

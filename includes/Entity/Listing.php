@@ -77,6 +77,13 @@ class Listing
     /**
      * @var string
      *
+     * @ORM\Column(name="url_sphere", type="string", length=255, nullable=false)
+     */
+    private $urlSphere;
+
+    /**
+     * @var string
+     *
      * @ORM\Column(type="text", length=1000, nullable=true)
      */
     private $jsonData;
@@ -134,11 +141,17 @@ class Listing
     public $priceList;
 
     /**
-     * @var string
+     * All amenities of this listing
      *
-     * @ORM\Column(name="url_sphere", type="string", length=255, nullable=false)
+     * @var \Doctrine\Common\Collections\ArrayCollection
+     *
+     * @ORM\OneToMany(targetEntity="FlatFindr\Entity\ListingAmenity", mappedBy="listing", cascade={"all"})
+     * @ORM\JoinTable(
+     *   name="listing_amenitiy",
+     *   joinColumns={@ORM\JoinColumn(name="listing_id", referencedColumnName="id", onDelete="CASCADE")}
+     * )
      */
-    private $urlSphere;
+    public $amenityList;
 
     /**
      * Sets id.
@@ -278,6 +291,26 @@ class Listing
     public function getOwner()
     {
         return $this->owner;
+    }
+
+    /**
+     * Sets urlSphere.
+     *
+     * @param string $urlSphere
+     */
+    public function setUrlSphere($urlSphere)
+    {
+        $this->urlSphere = $urlSphere;
+    }
+
+    /**
+     * Retrieves urlSphere.
+     *
+     * @return string
+     */
+    public function getUrlSphere()
+    {
+        return $this->urlSphere;
     }
 
     /**
@@ -524,22 +557,33 @@ class Listing
     }
 
     /**
-     * Sets urlSphere.
+     * Sets amenityList.
      *
-     * @param string $urlSphere
+     * @param \Doctrine\Common\Collections\ArrayCollection $amenityList
      */
-    public function setUrlSphere($urlSphere)
+    public function setAmenityList($amenityList)
     {
-        $this->urlSphere = $urlSphere;
+        $this->amenityList = $amenityList;
     }
 
     /**
-     * Retrieves urlSphere.
+     * Retrieves amenityList.
      *
-     * @return string
+     * @return \Doctrine\Common\Collections\ArrayCollection
      */
-    public function getUrlSphere()
+    public function getAmenityList()
     {
-        return $this->urlSphere;
+        return $this->amenityList;
+    }
+
+    /**
+     * Adds amenity.
+     *
+     * @param ListingAmenity $amenity
+     */
+    public function addAmenity($amenity)
+    {
+        $amenity->setListing($this);
+        $this->getAmenityList()->add($amenity);
     }
 }
