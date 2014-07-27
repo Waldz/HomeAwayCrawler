@@ -95,6 +95,27 @@ class Listing
     /**
      * @var \DateTime
      *
+     * @ORM\Column(name="date_create", type="datetime", nullable=true)
+     */
+    private $dateCreate;
+
+    /**
+     * @var \DateTime
+     *
+     * @ORM\Column(name="date_update", type="datetime", nullable=true)
+     */
+    private $dateUpdate;
+
+    /**
+     * @var \DateTime
+     *
+     * @ORM\Column(name="date_archive", type="datetime", nullable=true)
+     */
+    private $dateArchive;
+
+    /**
+     * @var \DateTime
+     *
      * @ORM\Column(name="date_sync", type="datetime", nullable=true)
      */
     private $dateSync;
@@ -381,6 +402,66 @@ class Listing
     }
 
     /**
+     * Sets dateCreate.
+     *
+     * @param \DateTime $dateCreate
+     */
+    public function setDateCreate($dateCreate)
+    {
+        $this->dateCreate = $dateCreate;
+    }
+
+    /**
+     * Retrieves dateCreate.
+     *
+     * @return \DateTime
+     */
+    public function getDateCreate()
+    {
+        return $this->dateCreate;
+    }
+
+    /**
+     * Sets dateUpdate.
+     *
+     * @param \DateTime $dateUpdate
+     */
+    public function setDateUpdate($dateUpdate)
+    {
+        $this->dateUpdate = $dateUpdate;
+    }
+
+    /**
+     * Retrieves dateUpdate.
+     *
+     * @return \DateTime
+     */
+    public function getDateUpdate()
+    {
+        return $this->dateUpdate;
+    }
+
+    /**
+     * Sets dateArchive.
+     *
+     * @param \DateTime $dateArchive
+     */
+    public function setDateArchive($dateArchive)
+    {
+        $this->dateArchive = $dateArchive;
+    }
+
+    /**
+     * Retrieves dateArchive.
+     *
+     * @return \DateTime
+     */
+    public function getDateArchive()
+    {
+        return $this->dateArchive;
+    }
+
+    /**
      * Sets dateSync.
      *
      * @param \DateTime $dateSync
@@ -419,7 +500,7 @@ class Listing
      */
     public function setDateNextSyncAfterFail()
     {
-        $now = new \DateTime('now');
+        $now = new \DateTime();
         $diff = $this->getDateSync()->diff($now);
 
         // First fail

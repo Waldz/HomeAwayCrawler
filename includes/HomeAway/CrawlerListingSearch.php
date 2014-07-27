@@ -87,6 +87,8 @@ class CrawlerListingSearch
         ));
         if(!$listing) {
             $listing = new Listing();
+            $listing->setStatus(Listing::STATUS_NEW);
+            $listing->setDateCreate(new \DateTime());
             $listing->setProvider(Listing::PROVIDER_HOMEAWAY);
             $listing->setProviderIdent($ident);
         }
@@ -176,7 +178,7 @@ class CrawlerListingSearch
             );
 
             // Update DB
-            $listing->setDateNextSync(new \DateTime('now'));
+            $listing->setDateNextSync(new \DateTime());
             $orm->persist($listing);
             $orm->flush();
 
@@ -205,10 +207,28 @@ class CrawlerListingSearch
     {
         $orm = $this->getEntityManager();
 
-        // Load HTML to DOM object
-        $html = $this->request($url);
-        $dom = new \simple_html_dom();
-        $dom->load($html);
+        $listing->setDateSync(new \DateTime());
+        try {
+            // Load HTML to DOM object
+            $html = $this->request($url);
+            $dom = new \simple_html_dom();
+            $dom->load($html);
+        } catch(\Exception $e) {
+            $this->log(sprintf(
+                '[ERROR] %s: %s',
+                get_class($e),
+                $e->getMessage()
+            ));
+
+            // Listing has gone
+            $listing->setStatus(Listing::STATUS_ARCHIVED);
+            $listing->setDateArchive(new \DateTime());
+            $listing->setDateNextSyncAfterFail();
+            $orm->persist($listing);
+            $orm->flush();
+
+            return $listing;
+        }
 
         // Flat title
         /** @var \simple_html_dom_node $domTitle */
@@ -270,7 +290,8 @@ class CrawlerListingSearch
 
         // Update DB
         $listing->setStatus(Listing::STATUS_ACTIVE);
-        $listing->setDateSync(new \DateTime('now'));
+        $listing->setDateUpdate(new \DateTime());
+        $listing->setDateNextSync((new \DateTime())->add(new \DateInterval('P1D')));
         $orm->persist($listing);
         $orm->flush();
 

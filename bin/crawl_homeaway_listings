@@ -23,7 +23,7 @@ if(APP_ENVIRONMENT=='development') {
 $select = $orm->createQueryBuilder()
     ->select('L')
     ->from('FlatFindr\Entity\Listing', 'L')
-    ->where('L.dateSync <= CURRENT_TIMESTAMP()')
+    ->where('L.dateNextSync <= CURRENT_TIMESTAMP()')
     ->orderBy('L.dateNextSync', 'ASC')
     ->setMaxResults(100);
 
