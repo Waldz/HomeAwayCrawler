@@ -41,7 +41,7 @@ class CrawlerListingSearch
     // private $urlSearch = 'http://www.homeaway.com/search/keywords:Family/arrival:2014-04-24/departure:2014-04-25/minSleeps/3/page:2'
     // private $urlSearch = 'http://www.homeaway.com/search/new-jersey/region:1026';
     // private $urlSearch = 'http://www.homeaway.com/vacation-rentals/new-york/r50';
-    private $urlSearch = 'http://www.homeaway.com/search/new-jersey/region:1026/keywords:New+jersey/arrival:2014-07-18/departure:2014-07-18/minPrice/5000';
+    private $urlSearch = 'http://www.homeaway.com/search/new-jersey/region:1026/keywords:New+jersey/arrival:2014-07-18/departure:2014-07-18/minPrice/2000';
 
     /**
      * @param EntityManager $entityManager
@@ -167,7 +167,7 @@ class CrawlerListingSearch
             /** @var \simple_html_dom_node $domListing */
             /** @noinspection PhpUndefinedMethodInspection */
             $listing = $this->factoryListing(
-                trim($domListing->find('.listing-face-content .listing-propertyid', 0)->text(), '# ')
+                trim($domListing->find('.listing-face-content .property-id', 0)->text(), '# ')
             );
             /** @noinspection PhpUndefinedMethodInspection */
             $listing->setTitle(
@@ -540,6 +540,13 @@ class CrawlerListingSearch
         if(!$domTable) {
             throw new \UnexpectedValueException('Amenities details not found');
         }
+
+        // Delete old amenities
+        $query = $this->getEntityManager()->createQueryBuilder()
+            ->delete('FlatFindr\Entity\ListingAmenity', 'A')
+            ->where('A.listing = :listing')
+            ->setParameter('listing', $listing->getId());
+        $query->getQuery()->execute();
 
         $i = 1;
         foreach($domTable->find('.row-fluid') as $domRow) {

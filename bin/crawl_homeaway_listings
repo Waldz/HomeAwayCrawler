@@ -20,7 +20,7 @@ if(APP_ENVIRONMENT=='development') {
         ->setCacheDirectory(APP_PATH . '/data/cache/');
 }
 
-$select = $orm->createQueryBuilder()
+$query = $orm->createQueryBuilder()
     ->select('L')
     ->from('FlatFindr\Entity\Listing', 'L')
     ->where('L.dateNextSync <= CURRENT_TIMESTAMP()')
@@ -28,7 +28,7 @@ $select = $orm->createQueryBuilder()
     ->setMaxResults(100);
 
 while(true) {
-    $listings = $select->getQuery()->getResult();
+    $listings = $query->getQuery()->getResult();
     // Check all asked listings
     if(count($listings)>0) {
         foreach($listings as $listing) {
