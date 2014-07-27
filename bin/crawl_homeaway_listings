@@ -1,0 +1,48 @@
+#!/usr/bin/env php
+<?php
+
+use FlatFindr\HomeAway\CrawlerListingSearch;
+use FlatFindr\Entity\Listing;
+
+require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/../library/simple_html_dom.php';
+require_once __DIR__ . '/../config/bootstrap.php';
+
+set_time_limit(0);
+ini_set('memory_limit', '500M');
+
+$orm = LoadServiceEntityManager();
+
+$crawler = new CrawlerListingSearch($orm);
+if(APP_ENVIRONMENT=='development') {
+    $crawler
+        ->setCacheEnabled(false)
+        ->setCacheDirectory(APP_PATH . '/data/cache/');
+}
+
+$select = $orm->createQueryBuilder()
+    ->select('L')
+    ->from('FlatFindr\Entity\Listing', 'L')
+    ->where('L.dateSync <= CURRENT_TIMESTAMP()')
+    ->orderBy('L.dateNextSync', 'ASC')
+    ->setMaxResults(100);
+
+while(true) {
+    $listings = $select->getQuery()->getResult();
+    // Check all asked listings
+    if(count($listings)>0) {
+        foreach($listings as $listing) {
+            /** @var Listing $listing */
+            // Request detailed info about each apartment
+            $crawler->requestDetailsByUrl($listing, $listing->getUrlDetail());
+            // Wait a bit, we don't want to get ban
+            usleep(0.5*1000000);
+        }
+
+    // Nothing to check, wait a bit
+    } else {
+        usleep(10*1000000);
+    }
+}
+
+

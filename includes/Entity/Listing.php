@@ -23,6 +23,10 @@ class Listing
 
     const PROVIDER_HOMEAWAY = 'HomeAway';
 
+    const STATUS_NEW = 'new';
+    const STATUS_ACTIVE = 'active';
+    const STATUS_ARCHIVED = 'archived';
+
     /**
      * @var int
      *
@@ -80,6 +84,27 @@ class Listing
      * @ORM\Column(name="url_sphere", type="string", length=255, nullable=false)
      */
     private $urlSphere;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(type="text", length=10, nullable=true)
+     */
+    private $status = self::STATUS_NEW;
+
+    /**
+     * @var \DateTime
+     *
+     * @ORM\Column(name="date_sync", type="datetime", nullable=true)
+     */
+    private $dateSync;
+
+    /**
+     * @var \DateTime
+     *
+     * @ORM\Column(name="date_next_sync", type="datetime", nullable=true)
+     */
+    private $dateNextSync;
 
     /**
      * @var string
@@ -331,6 +356,98 @@ class Listing
     public function getJsonData()
     {
         return $this->jsonData;
+    }
+
+    /**
+     * Sets status.
+     *
+     * @param string $status
+     * @return $this
+     */
+    public function setStatus($status)
+    {
+        $this->status = $status;
+        return $this;
+    }
+
+    /**
+     * Retrieves status.
+     *
+     * @return string
+     */
+    public function getStatus()
+    {
+        return $this->status;
+    }
+
+    /**
+     * Sets dateSync.
+     *
+     * @param \DateTime $dateSync
+     * @return $this
+     */
+    public function setDateSync($dateSync)
+    {
+        $this->dateSync = $dateSync;
+        return $this;
+    }
+
+    /**
+     * Retrieves dateSync.
+     *
+     * @return \DateTime
+     */
+    public function getDateSync()
+    {
+        return $this->dateSync;
+    }
+
+    /**
+     * Sets dateNextSync.
+     *
+     * @param \DateTime $dateNextSync
+     * @return $this
+     */
+    public function setDateNextSync($dateNextSync)
+    {
+        $this->dateNextSync = $dateNextSync;
+        return $this;
+    }
+
+    /**
+     * Sets dateNextSync (after first fail) in manner: +1d, +2d, +4d, +7d, +7d, +7d
+     */
+    public function setDateNextSyncAfterFail()
+    {
+        $now = new \DateTime('now');
+        $diff = $this->getDateSync()->diff($now);
+
+        // First fail
+        if($diff->d==0) {
+            $this->setDateNextSync(
+                $now->add(new \DateInterval('P1D'))
+            );
+        // Max check frequency is 7days
+        } elseif($diff->d>=4) {
+            $this->setDateNextSync(
+                $now->add(new \DateInterval('P7D'))
+            );
+        // Make next checks more rare
+        } else {
+            $this->setDateNextSync(
+                $now->add(new \DateInterval('P'.(2*$diff->d).'D'))
+            );
+        }
+    }
+
+    /**
+     * Retrieves dateNextSync.
+     *
+     * @return \DateTime
+     */
+    public function getDateNextSync()
+    {
+        return $this->dateNextSync;
     }
 
     /**

@@ -176,6 +176,7 @@ class CrawlerListingSearch
             );
 
             // Update DB
+            $listing->setDateNextSync(new \DateTime('now'));
             $orm->persist($listing);
             $orm->flush();
 
@@ -268,6 +269,8 @@ class CrawlerListingSearch
         }
 
         // Update DB
+        $listing->setStatus(Listing::STATUS_ACTIVE);
+        $listing->setDateSync(new \DateTime('now'));
         $orm->persist($listing);
         $orm->flush();
 
