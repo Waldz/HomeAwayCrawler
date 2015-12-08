@@ -132,20 +132,21 @@ class CrawlerAbstract
             )
         ));
         $response = file_get_contents($url, false, $context);
-        list($httpVersions, $httpStatus, $httpMessage) = explode(' ',$http_response_header[0], 3);
-        $this->log(sprintf(
-            "HTTP status %s with response: \n\t%s..",
-            $httpStatus,
-            substr($response, 0, 100)
-        ));
-
         // HTTP request failed
         if($httpError=error_get_last()) {
             throw new \UnexpectedValueException(sprintf(
                 'HTTP request failed: %s',
                 $httpError['message']
             ));
-        } elseif($httpStatus!=200) {
+        }
+
+        list($httpVersions, $httpStatus, $httpMessage) = explode(' ',$http_response_header[0], 3);
+        $this->log(sprintf(
+            "HTTP status %s with response: \n\t%s..",
+            $httpStatus,
+            substr($response, 0, 100)
+        ));
+        if($httpStatus!=200) {
             throw new \UnexpectedValueException(sprintf(
                 'HTTP response with wrong status: %s %s',
                 $httpStatus,
@@ -178,4 +179,4 @@ class CrawlerAbstract
             $message
         );
     }
-} 
+}

@@ -81,14 +81,14 @@ class Listing
     /**
      * @var string
      *
-     * @ORM\Column(name="url_sphere", type="string", length=255, nullable=false)
+     * @ORM\Column(name="url_sphere", type="string", length=255, nullable=true)
      */
     private $urlSphere;
 
     /**
      * @var string
      *
-     * @ORM\Column(type="text", length=10, nullable=true)
+     * @ORM\Column(type="text", length=10, nullable=false)
      */
     private $status = self::STATUS_NEW;
 

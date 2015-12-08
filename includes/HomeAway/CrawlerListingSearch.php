@@ -33,15 +33,23 @@ class CrawlerListingSearch
     private $urlBase = 'http://www.homeaway.com';
 
     /**
+     * URL, there all reagions can be found
+     *
+     * @var string
+     */
+    private $urlRegions = 'http://www.homeaway.com/vacation-rentals/world/r1';
+
+    /**
      * URL, there all available flats can be found
      *
      * @var string
      */
     // private $urlSearch = 'http://www.homeaway.com/search/';
-    // private $urlSearch = 'http://www.homeaway.com/search/keywords:Family/arrival:2014-04-24/departure:2014-04-25/minSleeps/3/page:2'
+    // private $urlSearch = 'http://www.homeaway.com/vacation-rentals/world/r1';
     // private $urlSearch = 'http://www.homeaway.com/search/new-jersey/region:1026';
     // private $urlSearch = 'http://www.homeaway.com/vacation-rentals/new-york/r50';
-    private $urlSearch = 'http://www.homeaway.com/search/new-jersey/region:1026/keywords:New+jersey/arrival:2014-07-18/departure:2014-07-18/minPrice/2000';
+    private $urlSearch = 'http://www.homeaway.com/vacation-rentals/new-york/new-york-city/r1737';
+    //private $urlSearch = 'http://www.homeaway.com/search/new-jersey/region:1026/keywords:New+jersey/arrival:2014-07-18/departure:2014-07-18/minPrice/2000';
 
     /**
      * @param EntityManager $entityManager
@@ -102,6 +110,98 @@ class CrawlerListingSearch
      * @return Listing[] List of listings
      * @throws \UnexpectedValueException
      */
+    public function requestRegionsAll()
+    {
+        $url = $this->urlRegions;
+
+        $regions = array();
+        while( !empty($url) ) {
+            // Process one page
+            /** @var \simple_html_dom $dom */
+            $regions = array_merge(
+                $regions,
+                $this->requestRegions($url, $dom)
+            );
+
+            // If another page exists
+            $domRegions = $dom->find('.gbs-tree ul.gbs-node-list li.');
+            foreach($domRegions as $domRegion) {
+                /** @var \simple_html_dom_node $domRegion */
+            }
+        }
+    }
+
+    /**
+     * Process regions results page
+     *
+     * @param string $url WHere to search
+     * @param \simple_html_dom $dom
+     *
+     * @return Listing[] List of listings
+     * @throws \UnexpectedValueException
+     */
+    private function requestRegions($url, &$dom)
+    {
+        $orm = $this->getEntityManager();
+
+        // Load HTML to DOM object
+        $html = $this->request($url);
+        $dom = new \simple_html_dom();
+        $dom->load($html);
+
+        // How many flats found?
+        /** @var \simple_html_dom_node $searchCount */
+        $searchCount = $dom->find('.container-search-results .number-results-text', 0);
+        /** @var \simple_html_dom_node $searchPage */
+        $searchPage = $dom->find('.search-results-column .page', 0);
+        if(!$searchCount) {
+            throw new \UnexpectedValueException('Search results not found');
+        }
+        $this->log(sprintf(
+                "Search results: %s (%s)",
+                $searchCount->text(),
+                $searchPage ? $searchPage->text() : ''
+            ));
+
+        // Retrieve each flat
+        $listings = array();
+        foreach ($dom->find('.container-search-results .listing-row') as $domListing) {
+            /** @var \simple_html_dom_node $domListing */
+            /** @noinspection PhpUndefinedMethodInspection */
+            $listing = $this->factoryListing(
+                trim($domListing->find('.listing-face-content .property-id', 0)->text(), '# ')
+            );
+            /** @noinspection PhpUndefinedMethodInspection */
+            $listing->setTitle(
+                trim($domListing->find('.listing-face-content .listing-title', 0)->text())
+            );
+            $listing->setUrlDetail(
+                $this->urlBase . $domListing->find('.listing-face-content .listing-url', 0)->href
+            );
+
+            // Update DB
+            $listing->setDateNextSync(new \DateTime());
+            $orm->persist($listing);
+            $orm->flush();
+
+            $this->log(sprintf(
+                    "\tID=%s, URL=%s, title=\"%s\"",
+                    $listing->getId(),
+                    $listing->getUrlDetail(),
+                    $listing->getTitle()
+                ));
+            $listings[] = $listing;
+        }
+
+        return $listings;
+    }
+
+    /**
+     * Performs search request
+     *
+     * @return Listing[] List of listings
+     * @throws \UnexpectedValueException
+     */
     public function requestSearchAll()
     {
         $url = $this->urlSearch;
@@ -130,7 +230,7 @@ class CrawlerListingSearch
     }
 
     /**
-     * Proccess search results page
+     * Process search results page
      *
      * @param string $url WHere to search
      * @param \simple_html_dom $dom
@@ -429,13 +529,21 @@ class CrawlerListingSearch
     protected function parsePrices(Listing $listing, $dom, $jsonAnalytics)
     {
         /** @var \simple_html_dom_node $domTable */
-        $domTable = $dom->find('table.ratesTable', 0);
-        if(!$domTable) {
+        if(!$dom->find('#rentalRates', 0)) {
             throw new \UnexpectedValueException('Price details not found');
         }
 
+        $domTable = $dom->find('table.ratesTable', 0);
+        if(!$domTable) {
+            return;
+        }
+
         $basis = trim($dom->find('#rentalRates .basis dd', 0)->text());
-        if($basis!='Per property') {
+        if($basis=='Per property') {
+            $basis = ListingPrice::BASIS_OVERAL;
+        } elseif($basis=='Per person') {
+            $basis = ListingPrice::BASIS_PERSON;
+        } else {
             throw new \UnexpectedValueException('Price basis unknown');
         }
 
@@ -446,11 +554,25 @@ class CrawlerListingSearch
         }
 
         $i = 1;
-        foreach($domTable->find('tr.ratePeriodLabel') as $domRow) {
+        foreach($domTable->find('table.ratesTable tr.ratePeriodLabel') as $domRow) {
             /** @var \simple_html_dom_node $domRow */
-            /** @var \simple_html_dom_node $domDate */
-            $domDate = $domRow->find('td.alt .ratePeriodDates ', 0);
-            if(preg_match('/(.* \d* \d*) - (.* \d* \d*)/', trim($domDate->text()), $matches)) {
+            $dateText = trim($domRow->find('td.alt .ratePeriodDates', 0)->text());
+            $dateTitle = trim($domRow->find('td.alt .ratePeriodTitle', 0)->text());
+            if(empty($dateText)) {
+                $this->log(sprintf(
+                    '[NOTICE] Found price with title "%s", but wrong date: "%s"',
+                    $dateTitle,
+                    $dateText
+                ));
+                continue;
+            }
+
+            // Format "Nov 27 2014 - Nov 27 2014"
+            if(preg_match('/(.* \d* \d*)\s+-\s+(.* \d* \d*)/', $dateText, $matches)) {
+                $dateStart = new \DateTime($matches[1]);
+                $dateEnd = new \DateTime($matches[2]);
+            // Format "Nov 27 - Nov 27"
+            } elseif(preg_match('/(.* \d*)\s+-\s+(.* \d*)/', $dateText, $matches)) {
                 $dateStart = new \DateTime($matches[1]);
                 $dateEnd = new \DateTime($matches[2]);
             } else {
@@ -458,27 +580,27 @@ class CrawlerListingSearch
             }
 
             $this->parsePriceByType(
-                $listing, ListingPrice::TYPE_DAILY, $dateStart, $dateEnd, $currency,
+                $listing, ListingPrice::TYPE_DAILY, $basis, $dateStart, $dateEnd, $currency,
                 $domRow->find('td.nightly .rate', 0),
                 $domRow->find('td.nightly .ratenote', 0)
             );
             $this->parsePriceByType(
-                $listing, ListingPrice::TYPE_WEEKEND, $dateStart, $dateEnd, $currency,
+                $listing, ListingPrice::TYPE_WEEKEND, $basis, $dateStart, $dateEnd, $currency,
                 $domRow->find('td.weekendNight .rate', 0),
                 $domRow->find('td.weekendNight .ratenote', 0)
             );
             $this->parsePriceByType(
-                $listing, ListingPrice::TYPE_WEEKLY, $dateStart, $dateEnd, $currency,
+                $listing, ListingPrice::TYPE_WEEKLY, $basis, $dateStart, $dateEnd, $currency,
                 $domRow->find('td.weekly .rate', 0),
                 $domRow->find('td.weekly .ratenote', 0)
             );
             $this->parsePriceByType(
-                $listing, ListingPrice::TYPE_MONTHLY, $dateStart, $dateEnd, $currency,
+                $listing, ListingPrice::TYPE_MONTHLY, $basis, $dateStart, $dateEnd, $currency,
                 $domRow->find('td.monthly .rate', 0),
                 $domRow->find('td.monthly .ratenote', 0)
             );
             $this->parsePriceByType(
-                $listing, ListingPrice::TYPE_EVENT, $dateStart, $dateEnd, $currency,
+                $listing, ListingPrice::TYPE_EVENT, $basis, $dateStart, $dateEnd, $currency,
                 $domRow->find('td.event .rate', 0),
                 $domRow->find('td.event .ratenote', 0)
             );
@@ -489,27 +611,40 @@ class CrawlerListingSearch
 
     /**
      * @param Listing $listing
-     * @param $type
+     * @param string $type
+     * @param string $basis
      * @param \DateTime $dateStart
      * @param \DateTime $dateEnd
      * @param string $currency
-     * @param \simple_html_dom_node|array $price
+     * @param \simple_html_dom_node|array $priceDom
      * @param \simple_html_dom_node|array $priceNotes
+     *
+     * @throws \UnexpectedValueException
      */
     protected function parsePriceByType(
         Listing $listing,
-        $type, \DateTime $dateStart, \DateTime $dateEnd, $currency,
-        $price, $priceNotes
+        $type, $basis, \DateTime $dateStart, \DateTime $dateEnd, $currency,
+        $priceDom, $priceNotes
     )
     {
-        if(!isset($price)) {
+        if(!isset($priceDom)) {
             return;
+        };
+        $price = '';
+        foreach($priceDom->nodes as $node) {
+            if($node->tag=='text') {
+                $price .= trim($node->text());
+            }
         }
-
-        $price = trim($price->text());
-        $price = str_replace(array('$', ','), '', $price);
         if(empty($price)) {
             return;
+        }
+        $price = str_replace(array('$', ','), '', trim($price));;
+        if(!is_numeric($price)) {
+            throw new \UnexpectedValueException(sprintf(
+                'Price ammount not found in "%s"',
+                trim($priceDom->text())
+            ));
         }
         $priceNotes = trim($priceNotes->text());
 
@@ -520,6 +655,7 @@ class CrawlerListingSearch
         }
         $listingPrice
             ->setType($type)
+            ->setBasis($basis)
             ->setDateStart($dateStart)
             ->setDateEnd($dateEnd)
             ->setPrice($price)
@@ -559,8 +695,24 @@ class CrawlerListingSearch
                         $this->parseAmenityByType($listing, ListingAmenity::NAME_PROPERTY_TYPE, $domRow);
                         break;
 
+                    case 'buildingtype':
+                        $this->parseAmenityByType($listing, ListingAmenity::NAME_BUILDING_TYPE, $domRow);
+                        break;
+
+                    case 'formsofpayment':
+                        $this->parseAmenityByType($listing, ListingAmenity::NAME_PAYMENT_TYPE, $domRow);
+                        break;
+
+                    case 'accommodationType':
+                        $this->parseAmenityByType($listing, ListingAmenity::NAME_ACCOMMODATION_TYPE, $domRow);
+                        break;
+
                     case 'locationType':
                         $this->parseAmenityByType($listing, ListingAmenity::NAME_LOCATION_TYPE, $domRow);
+                        break;
+
+                    case 'theme':
+                        $this->parseAmenityByType($listing, ListingAmenity::NAME_THEME, $domRow);
                         break;
 
                     case 'general':
@@ -571,8 +723,16 @@ class CrawlerListingSearch
                         $this->parseAmenityByType($listing, ListingAmenity::NAME_KITCHEN, $domRow);
                         break;
 
+                    case 'dining':
+                        $this->parseAmenityByType($listing, ListingAmenity::NAME_DINING, $domRow);
+                        break;
+
                     case 'entertainment':
                         $this->parseAmenityByType($listing, ListingAmenity::NAME_ENTERTAINMENT, $domRow);
+                        break;
+
+                    case 'communicationInternet':
+                        $this->parseAmenityByType($listing, ListingAmenity::NAME_COMMUNICATIONS, $domRow);
                         break;
 
                     case 'outside':
@@ -585,6 +745,10 @@ class CrawlerListingSearch
 
                     case 'poolSpa':
                         $this->parseAmenityByType($listing, ListingAmenity::NAME_POOL, $domRow);
+                        break;
+
+                    case 'onsiteServices':
+                        $this->parseAmenityByType($listing, ListingAmenity::NAME_SERVICES_ONSITE, $domRow);
                         break;
 
                     case 'attractions':
@@ -612,11 +776,23 @@ class CrawlerListingSearch
                 }
             } else {
                 switch($domName->text()) {
+                    case 'Meals:':
+                        $this->parseAmenityByType($listing, ListingAmenity::NAME_MEALS, $domRow);
+                        break;
+
+                    case 'Floor Area:':
+                        $this->parseAmenityByType($listing, ListingAmenity::NAME_AREA, $domRow);
+                        break;
+
                     case 'Bedrooms:':
                         $this->parseAmenityByType($listing, ListingAmenity::NAME_BEDROOM, $domRow);
                         break;
 
                     case 'Bathrooms:':
+                        $this->parseAmenityByType($listing, ListingAmenity::NAME_BATHROOM, $domRow);
+                        break;
+
+                    case 'Notes:':
                         $this->parseAmenityByType($listing, ListingAmenity::NAME_BATHROOM, $domRow);
                         break;
 

@@ -14,19 +14,29 @@ class ListingAmenity
 {
 
     const NAME_PROPERTY_TYPE = 'property_type';
+    const NAME_BUILDING_TYPE = 'building_type';
     const NAME_LOCATION_TYPE = 'location_type';
+    const NAME_PAYMENT_TYPE = 'payment_type';
+    const NAME_ACCOMMODATION_TYPE = 'accommodation_type';
+    const NAME_AREA = 'area';
+    const NAME_THEME = 'theme';
     const NAME_GENERAL = 'general';
     const NAME_KITCHEN = 'kitchen';
+    const NAME_DINING = 'dining';
     const NAME_BATHROOM = 'bathroom';
     const NAME_BEDROOM = 'bedroom';
     const NAME_ENTERTAINMENT = 'entertainment';
+    const NAME_COMMUNICATIONS = 'communications';
     const NAME_OUTSIDE = 'outside';
     const NAME_SUITABILITY = 'suitability';
     const NAME_POOL = 'pool';
     const NAME_ATTRACTIONS = 'attractions';
     const NAME_LEISURE = 'activities';
     const NAME_SERVICES = 'services';
+    const NAME_SERVICES_ONSITE = 'services_onsite';
     const NAME_SPORTS = 'sports';
+    const NAME_MEALS = 'meals';
+    const NAME_NOTES = 'notes';
 
     /**
      * @var int

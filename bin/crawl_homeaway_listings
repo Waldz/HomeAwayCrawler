@@ -16,7 +16,7 @@ $orm = LoadServiceEntityManager();
 $crawler = new CrawlerListingSearch($orm);
 if(APP_ENVIRONMENT=='development') {
     $crawler
-        ->setCacheEnabled(false)
+        ->setCacheEnabled(true)
         ->setCacheDirectory(APP_PATH . '/data/cache/');
 }
 

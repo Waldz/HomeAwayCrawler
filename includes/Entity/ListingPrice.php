@@ -22,6 +22,9 @@ class ListingPrice
     const TYPE_MONTHLY = 'monthly';
     const TYPE_EVENT = 'event';
 
+    const BASIS_OVERAL = 'overal';
+    const BASIS_PERSON = 'person';
+
     /**
      * @var int
      *
@@ -45,6 +48,13 @@ class ListingPrice
      * @ORM\Column(name="type", type="string", length=10, nullable=false)
      */
     private $type;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="basis", type="string", length=10, nullable=false)
+     */
+    private $basis;
 
     /**
      * @var \DateTime
@@ -143,6 +153,28 @@ class ListingPrice
     public function getType()
     {
         return $this->type;
+    }
+
+    /**
+     * Sets basis.
+     *
+     * @param string $basis
+     * @return $this
+     */
+    public function setBasis($basis)
+    {
+        $this->basis = $basis;
+        return $this;
+    }
+
+    /**
+     * Retrieves basis.
+     *
+     * @return string
+     */
+    public function getBasis()
+    {
+        return $this->basis;
     }
 
     /**
